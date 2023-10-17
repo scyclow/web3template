@@ -1,0 +1,294 @@
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="description" content="">
+  <meta name="keywords" content="steviep, steve pikelny, pikelny, crypto, ethereum, bitcoin">
+
+  <meta name="twitter:image" content="https://steviep.xyz/">
+  <meta name="twitter:image:alt" content="">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:creator" content="@steviepxyz">
+  <meta name="twitter:site" content="@steviepxyz">
+  <meta property="twitter:description" content="">
+
+  <meta name="og:image" property="og:image" content="https://steviep.xyz/">
+  <meta name="og:image:alt" content="">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://steviep.xyz/">
+  <meta property="og:title" content="">
+  <meta property="og:site_name" content="">
+  <meta property="og:description" content="">
+
+  <link rel="stylesheet" type="text/css" href="./styles.css">
+
+
+  <style type="text/css">
+    * {
+      font-family: sans-serif;
+    }
+
+    header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0.25em;
+      margin-bottom: 1em;
+      max-width: 1500px;
+      margin: auto;
+    }
+
+    main, footer {
+      max-width: 800px;
+      margin: auto;
+      padding: 0 1em;
+    }
+
+
+    footer {
+      padding-top: 1em;
+      padding-bottom: 1em;
+      text-align: center;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0.5em 0;
+      font-size: 4em;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 3em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.9em;
+      }
+    }
+
+    .address {
+      font-family: monospace;
+    }
+
+    #connectWalletSection {
+      display: flex;
+      justify-content: center;
+    }
+
+    #connectedAs {
+      font-size: 1.25em;
+    }
+    #lastUpdated, #connectedAs, #connectedBalance, #connectedNetwork {
+      font-family: monospace;
+    }
+
+    .connectionSection {
+      padding: 0.5em;
+    }
+
+    .connectButton {
+      font-size: 1em;
+      padding: 0.5em 1em;
+      cursor: pointer;
+    }
+
+    #connectedAs {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 100%;
+    }
+
+
+    button {
+      cursor: pointer;
+      background: #000;
+      color: #fff;
+      border: 1px solid;
+      transition: 150ms;
+    }
+
+    button:hover {
+      background: #fff;
+      color: #000;
+    }
+
+
+
+
+    .label {
+      text-transform: uppercase;
+      font-size: 0.75em;
+      font-weight: bold;
+    }
+
+
+    @media (max-width: 370px) {
+      .address {
+        font-size: 0.85em;
+      }
+    }
+
+
+
+    .nightmode * {
+      color: #fff;
+    }
+    body.nightmode {
+      background: #000;
+    }
+    .nightmode input {
+      color: #000;
+    }
+    .nightmode a, .nightmode #question {
+      color: #00a7ff;
+    }
+
+
+    .grid {
+      margin: auto;
+      padding: 1em;
+      max-width: 1500px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      column-gap: 1vw;
+      row-gap: 0.6vw;
+    }
+
+    .grid img {
+      width: 100%;
+    }
+
+    @media (max-width: 1100px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        max-width: 1000px;
+      }
+    }
+
+
+    @media (max-width: 500px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    img {
+      border: 1px solid;
+    }
+
+    p {
+      margin-bottom: 0.5em;
+      text-align: justify;
+    }
+
+    code {
+      font-family: monospace;
+      text-align: center;
+      display: block;
+      margin-bottom: 0.5em;
+    }
+
+  </style>
+</head>
+
+<body>
+  <header>
+    <connect-wallet id="wallet-connect" class="connectionSection">
+      <section slot="notConnected">
+        <!-- VIEWABLE WHEN WALLET NOT CONNECTED -->
+
+        <connect-button>
+          <button slot="button" class="connectButton">Connect Wallet</button>
+          <div slot="loading">Loading...</div>
+          <div slot="error" class="error"></div>
+        </connect-button>
+      </section>
+
+
+      <section slot="connected">
+
+        <!-- VIEWABLE WHEN WALLET IS CONNECTED -->
+
+        <section>
+          <h3 class="label">CONNECTED AS: <span id="connectedAs"></span></h3>
+          <div id="connectedBalance"></div>
+          <div id="connectedNetwork"></div>
+        </section>
+      </section>
+
+
+      <section slot="noWeb3">
+        <!-- VIEWABLE IN NON-WEB3 BROWSER -->
+
+      </section>
+    </connect-wallet>
+  </header>
+
+
+  <footer><a href="https://steviep.xyz" target="_blank">steviep.xyz</a> (c) 2023</footer>
+</body>
+
+<script src="./min.ethers.js"></script>
+<script src="./$.js"></script>
+<script src="./webComponents.js"></script>
+<script src="./web3Components.js"></script>
+<script src="./connectWallet.js"></script>
+
+
+<script>
+
+  // GLOBAL CONTRACT VARIABLES
+
+
+  const NETWORK = 'local'
+
+  const CONTRACT = {
+    local: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    goerli: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    mainnet: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+  }[NETWORK]
+
+
+  const ABI = [
+    'event BidMade(uint256 indexed auctionId, address indexed bidder, uint256 amount, uint256 timestamp)',
+    'function settle(uint256 auctionId) external payable',
+  ]
+</script>
+
+
+<script type="text/javascript">
+
+
+  const provider = new Web3Provider()
+  mountComponents(
+    ConnectWallet(provider, 'connectWallet'),
+    ConnectButton(provider),
+  )
+
+
+
+  // RUN WHEN WALLET CONNECTS OR RECONNECTS
+  provider.onConnect(async () => {
+    const contract = await provider.contract(CONTRACT, ABI)
+
+  })
+
+
+</script>
+
+
+
+<script type="text/javascript">
+  var hours = new Date().getHours();
+  if (hours <= 5 || hours >= 22) document.body.className = 'nightmode';
+</script>
+</html>
