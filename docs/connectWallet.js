@@ -1,163 +1,149 @@
-
-// const connectWalletTemplate = `
-//   <section>
-//   <h1>hello</h1>
-//     <section id="case-noWeb3" style="display: none;">
-//       <slot name="noWeb3"></slot>
-//     </section>
-
-//     <section id="case-notConnected" style="display: none;">
-//       <slot name="notConnected"></slot>
-//     </section>
-
-//     <section id="case-connected" style="display: none;">
-//       <slot name="connected"></slot>
-//     </section>
-
-//     <section id="case-connectionError" style="display: none;">
-//       <slot name="connectionError"></slot>
-//     </section>
-//   </section>
-// `
+import {createComponent} from '../$.js'
+import {provider} from '../eth.js'
 
 
-document.body.innerHTML += (`
-<template id="connectWalletTemplate">
-  <section>
-    <section id="case-noWeb3" style="display: none;">
-      <slot name="noWeb3"></slot>
+
+createComponent(
+  'connect-wallet',
+  `
+    <style>
+      .hidden {
+        display: none;
+      }
+    </style>
+
+    <section>
+      <section id="case-noWeb3" class="hidden">
+        <slot name="noWeb3"></slot>
+      </section>
+
+      <section id="case-notConnected" class="hidden">
+        <slot name="notConnected"></slot>
+      </section>
+
+      <section id="case-connected" class="hidden">
+        <slot name="connected"></slot>
+      </section>
+
+      <section id="case-connectionError" class="hidden">
+        <slot name="connectionError"></slot>
+      </section>
     </section>
+  `,
+  {
+    isEthBrowser: false,
+    connectedAddr: null,
+    connectionError: null,
+  },
+  (ctx) => {
+    ctx.provider = provider
+    ctx.$noWeb3 = ctx.$('#case-noWeb3')
+    ctx.$connected = ctx.$('#case-connected')
+    ctx.$notConnected = ctx.$('#case-notConnected')
+    ctx.$connectionError = ctx.$('#case-connectionError')
 
-    <section id="case-notConnected" style="display: none;">
-      <slot name="notConnected"></slot>
-    </section>
-
-    <section id="case-connected" style="display: none;">
-      <slot name="connected"></slot>
-    </section>
-
-    <section id="case-connectionError" style="display: none;">
-      <slot name="connectionError"></slot>
-    </section>
-  </section>
-</template>
-`)
-
-const ConnectWallet = (web3Provider, connectButtonId) => class extends BaseComponent('connectWalletTemplate') {
-  static name = 'connect-wallet'
-  constructor() {
-    super()
-    this.provider = web3Provider
-    this.$noWeb = $.id('case-noWeb3', this.template)
-    this.$notConnected = $.id('case-notConnected', this.template)
-    this.$connected = $.id('case-connected', this.template)
-    this.$connectionError = $.id('case-connectionError', this.template)
-
-    this.update('isEthBrowser', this.provider.isEthBrowser)
-
-    this.provider.isConnected().then(addr => this.update('connectedAddr', addr))
-
-    this.provider.onConnect(addr => {
-      this.update('connectedAddr', addr)
+    ctx.setState({
+      isEthBrowser: ctx.provider.isEthBrowser
     })
 
+    ctx.provider.onConnect(
+      connectedAddr => ctx.setState({
+        connectedAddr
+      }),
+      connectionError => ctx.setState({
+        connectionError
+      })
+    )
+  },
+  ctx => {
+    [
+      ctx.$noWeb3,
+      ctx.$connected,
+      ctx.$notConnected,
+      ctx.$connectionError,
+    ].forEach($case => {
+      $case.classList.add('hidden')
+    })
 
-
-  }
-
-  unhide(element) {
-    $(element, 'display', 'initial')
-  }
-
-  render(template, attrs) {
-    if (attrs.hasError) {
-      this.unhide($.id('case-connectionError', template))
-      return template
-
-    } else if (!attrs.isEthBrowser) {
-      this.unhide($.id('case-noWeb3', template))
-      return template
-
-    } else if (attrs.connectedAddr) {
-      this.unhide($.id('case-connected', template))
-      return template
-
+    if (!ctx.state.isEthBrowser) {
+      ctx.$noWeb3.classList.remove('hidden')
+    } else if (ctx.state.connectionError) {
+      ctx.$connectionError.classList.remove('hidden')
+    } else if (ctx.state.connectedAddr) {
+      ctx.$connected.classList.remove('hidden')
     } else {
-      this.unhide($.id('case-notConnected', template))
-      return template
+      ctx.$notConnected.classList.remove('hidden')
     }
   }
-}
+)
 
 
 
-document.body.innerHTML += (`
-<template id="connectButtonTemplate">
-  <slot name="button" id="case-connectNotLoading" style="display: none;"></slot>
-  <slot name="loading" id="case-connectLoading" style="display: none;"></slot>
-  <slot name="error" id="case-connectError" style="display: none;"></slot>
-</template>
-`)
+createComponent(
+  'connect-button',
+  `
+    <style>
+      .hidden {
+        display: none;
+      }
 
-const ConnectButton = (web3Provider) => class extends BaseComponent('connectButtonTemplate') {
-  static name = 'connect-button'
-  constructor() {
-    super()
-    this.provider = web3Provider
+      .error {
+        color: var(--red-color);
+      }
+    </style>
 
-    Array.from(this.children).forEach(child => {
-      if (child.tagName === 'BUTTON') this.$button = child
-      if (child.classList.contains('error')) this.$error = child
+    <div>
+      <div style="display: flex; justify-content: center"><slot name="button" id="case-connectNotLoading" class="hidden"></slot></div>
+      <div><slot name="loading" id="case-connectLoading" class="hidden"></slot></div>
+      <div><slot name="error" id="case-connectError" class="hidden error"></slot></div>
+    </div>
+  `,
+  {
+    loading: false,
+    error: false,
+  },
+  ctx => {
+    ctx.provider = provider
+    ctx.$connectNotLoading = ctx.$('#case-connectNotLoading')
+    ctx.$connectLoading = ctx.$('#case-connectLoading')
+    ctx.$connectError = ctx.$('#case-connectError')
+
+    Array.from(ctx.children).forEach(child => {
+      if (child.tagName === 'BUTTON') ctx.$button = child
     })
 
-
-    this.$button.onclick = async () => {
-      this.update('isLoading', true)
-      this.update('errorMsg', '')
-
+    ctx.$button.addEventListener('click', async () => {
+      ctx.setState({ error: false, loading: true })
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }, [])
-        const address = await this.provider.isConnected()
-        this.provider.connect()
-        // this.update('isEthBrowser', this.provider.isEthBrowser)
-        this.update('isLoading', false)
+        const address = await ctx.provider.isConnected()
+        ctx.provider.connect()
 
-      } catch (e) {
-        this.update('isLoading', false)
-        this.update('errorMsg', e.message)
-
-        console.error(e)
+      } catch (error) {
+        ctx.setState({ error, loading: false })
+        console.error(error)
       }
-    }
+    })
+  },
+  ctx => {
+    [
+      ctx.$connectNotLoading,
+      ctx.$connectLoading,
+      ctx.$connectError,
+    ].forEach(c => {
+      c.classList.add('hidden')
+    })
 
-  }
-
-  unhide(element) {
-    $(element, 'display', 'initial')
-  }
-
-  hide(element) {
-    $(element, 'display', 'none')
-  }
-
-  render(template, attrs) {
-    if (attrs.isLoading) {
-      this.hide($.id('case-connectNotLoading', template))
-      this.unhide($.id('case-connectLoading', template))
+    if (ctx.state.error) {
+      ctx.$connectNotLoading.classList.remove('hidden')
+      ctx.$connectError.classList.remove('hidden')
+      ctx.$connectError.innerHTML = ctx.state.error?.message
+    } else if (ctx.state.loading) {
+      ctx.$connectLoading.classList.remove('hidden')
     } else {
-      this.hide($.id('case-connectLoading', template))
-      this.unhide($.id('case-connectNotLoading', template))
+      ctx.$connectNotLoading.classList.remove('hidden')
     }
 
-    if (attrs.errorMsg) {
-      this.unhide($.id('case-connectError', template))
-      this.$error.innerHTML = attrs.errorMsg
-    } else {
-      this.hide($.id('case-connectError', template))
-    }
-
-    return template
-  }
-}
-
+  },
+)
 

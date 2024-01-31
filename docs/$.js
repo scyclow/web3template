@@ -1,5 +1,7 @@
 
-const $ = (elem, prop, value) => elem.style[prop] = value
+export const $ = (elem, prop, value) => elem.style[prop] = value
+
+window.$ = $
 $.cls = (selector, elem=document) => Array.isArray(elem)
   ? elem.map(e => $.cls(e, selector)).flat()
   : Array.from(elem.getElementsByClassName(selector))
@@ -11,11 +13,11 @@ $.id = (selector, elem=document) => Array.isArray(elem)
 
 $.render = (e, children) => {
   if (!children) return
-  else if (typeof children === 'string') e.textContent = children
+  else if (typeof children === 'string') e.innerHTML = children
   else if (Array.isArray(children)) {
     if (typeof children[0] === 'string') {
       children.forEach(child => {
-        e.textContent += (
+        e.innerHTML += (
           typeof child === 'string' ? child : child.outerHTML
         )
       })
@@ -41,6 +43,7 @@ $.create = elType => (children, attrs={}) => {
 }
 
 $.a = $.create('a')
+$.li = $.create('li')
 $.div = $.create('div')
 $.span = $.create('span')
 $.main = $.create('main')
@@ -49,7 +52,7 @@ $.section = $.create('section')
 
 const $html = document.getElementsByTagName('html')[0]
 
-let queryParams
+export let queryParams
 
 try {
   queryParams = window.location.search
@@ -119,7 +122,7 @@ function setMetadata(usedContent) {
   console.log(title)
 }
 
-const ls = {
+export const ls = {
   get(key) {
     try {
       return window.localStorage && window.localStorage.getItem && JSON.parse(window.localStorage.getItem(key))
@@ -136,38 +139,71 @@ const ls = {
   }
 }
 
+window.ls = ls
 
-function unhide(element) {
-  $(element, 'display', '')
-}
+export const createComponent = (tag, templateStr, initialState, onInit, onRender) => {
+  class ReactStyleComponent extends HTMLElement {
+    constructor() {
+      super();
 
-function hide(element) {
-  $(element, 'display', 'none')
-}
+      // Initialize component state (similar to React's state)
+      this.state = Object.assign({}, initialState)
+      this.oldState = this.state
+      this.events = {}
 
-function setRunInterval(fn, ms, i=0) {
-  const run = () => {
-    fn(i)
-    i++
-  }
+      // Create a shadow DOM and attach it to the element
+      const shadowRoot = this.attachShadow({ mode: 'open' })
 
-  run()
+      // Define a template for the web component
+      const template = document.createElement('template');
+      template.innerHTML = templateStr;
 
-  let isCleared = false
+      // Clone the template content and append it to the shadow DOM
+      shadowRoot.appendChild(template.content.cloneNode(true));
 
-  let interval = setInterval(run, ms)
+      const qs = shadowRoot.querySelector.bind(shadowRoot)
+      this.$ = selector => {
+        const e = qs(selector)
+        if (selector[0] === '.') {
+          return e ? Array.from(e) : []
+        } else {
+          return e
+        }
+      }
 
-  const newInterval = (ms) => {
-    if (isCleared) return
-    clearInterval(interval)
-    interval = setInterval(run, ms)
-  }
+      this.onRender = onRender
+      onInit(this)
+    }
 
-  const stopInterval = () => {
-    if (!isCleared) {
-      clearInterval(interval)
-      isCleared = true
+    veiwState() {
+      return this.state
+    }
+
+    // Define a method to set the component state
+    setState(newState) {
+      this.oldState = this.state
+      this.state = { ...this.state, ...newState };
+
+      if (deepEquals(this.state, this.oldState)) return
+      this.render()
+    }
+
+    // Define a method to render the component
+    render() {
+      this.onRender(this)
+    }
+
+    // Called when the element is connected to the DOM
+    connectedCallback() {
+      this.render();
+    }
+
+    registerEventHandler(event, fn) {
+      if (this.events[event]) this.events[event].push(fn)
+      else this.events[event] = [fn]
     }
   }
-  return stopInterval
+
+  customElements.define(tag, ReactStyleComponent)
 }
+

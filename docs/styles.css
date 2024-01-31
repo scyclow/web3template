@@ -1,6 +1,31 @@
+:root {
+
+  --bg-color: #fff;
+  --error-color: #f00;
+
+
+
+
+
+
+  --default-font: sans-serif;
+  --title-font: serif;
+  --code-font: monospace;
+}
+
 * {
   padding: 0;
   margin: 0;
+  font-family: var(--default-font);
+}
+
+
+html {
+  background: var(--bg-color);
+}
+
+body {
+  background: var(--bg-color);
 }
 
 .center {
@@ -12,7 +37,48 @@
 }
 
 .error {
-  color: #f00;
+  color: var(--error-color);
   text-align: center;
   margin: 0.25em 0;
+}
+
+
+header {
+  text-align: center;
+  padding: 0.25em;
+  margin-bottom: 1em;
+}
+
+
+
+footer {
+  padding-top: 1em;
+  padding-bottom: 1em;
+  text-align: center;
+}
+
+h1 {
+  text-align: center;
+  margin: 0.5em 0;
+}
+
+.address {
+  font-family: monospace;
+}
+
+button {
+  cursor: pointer;
+}
+
+
+
+button:disabled {
+  opacity: 0.55;
+  user-select: none;
+  cursor: no-drop;
+}
+
+
+code {
+  font-family: var(--code-font);
 }
